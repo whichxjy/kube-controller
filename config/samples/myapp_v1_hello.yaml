@@ -1,0 +1,7 @@
+apiVersion: myapp.whichxjy.com/v1
+kind: Hello
+metadata:
+  name: hello-sample
+spec:
+  # Add fields here
+  foo: bar

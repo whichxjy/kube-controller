@@ -1,0 +1,7 @@
+domain: whichxjy.com
+repo: github.com/whichxjy/kube-controller
+resources:
+- group: myapp
+  kind: Hello
+  version: v1
+version: "2"
