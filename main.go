@@ -71,7 +71,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.HelloReconciler{
+	if err := (&controllers.HelloReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Hello"),
 		Scheme: mgr.GetScheme(),
@@ -84,6 +84,7 @@ func main() {
 		)
 		os.Exit(1)
 	}
+
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

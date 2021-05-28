@@ -23,22 +23,32 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type PhaseType string
+
+const (
+	InitPhase      PhaseType = "PENDING"
+	RunningPhase   PhaseType = "RUNNING"
+	CompletedPhase PhaseType = "DONE"
+)
+
 // HelloSpec defines the desired state of Hello
 type HelloSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Hello. Edit Hello_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	HelloTimes uint `json:"helloTimes,omitempty"`
 }
 
 // HelloStatus defines the observed state of Hello
 type HelloStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Phase PhaseType `json:"phase,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Hello is the Schema for the hellos API
 type Hello struct {
