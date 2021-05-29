@@ -62,14 +62,14 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if hello.Status.Phase == "" {
-		hello.Status.Phase = myappv1.InitPhase
+		hello.Status.Phase = myappv1.HelloPending
 	}
 
 	logger.Info("Check phase", "Phase", hello.Status.Phase)
 	requeue := false
 
 	switch hello.Status.Phase {
-	case myappv1.InitPhase:
+	case myappv1.HelloPending:
 		// Create a pod to run commands.
 		pod := getHelloPod(hello)
 		if err := ctrl.SetControllerReference(hello, pod, r.Scheme); err != nil {
@@ -80,8 +80,8 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			logger.Error(err, "Fail to set create pod")
 			return ctrl.Result{}, err
 		}
-		hello.Status.Phase = myappv1.RunningPhase
-	case myappv1.RunningPhase:
+		hello.Status.Phase = myappv1.HelloRunning
+	case myappv1.HelloRunning:
 		pod := &corev1.Pod{}
 		if err := r.Get(ctx, req.NamespacedName, pod); err != nil {
 			logger.Error(err, "Fail to get pod")
@@ -89,22 +89,22 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		if pod.Status.Phase == corev1.PodSucceeded {
-			hello.Status.Phase = myappv1.SucceededPhase
+			hello.Status.Phase = myappv1.HelloSucceeded
 		} else if pod.Status.Phase == corev1.PodFailed {
-			hello.Status.Phase = myappv1.FailedPhase
+			hello.Status.Phase = myappv1.HelloFailed
 		} else {
 			requeue = true
 		}
-	case myappv1.SucceededPhase:
+	case myappv1.HelloSucceeded:
 		logger.Info("Done")
 		return ctrl.Result{}, nil
-	case myappv1.FailedPhase:
+	case myappv1.HelloFailed:
 		pod := getHelloPod(hello)
 		if err := r.Delete(ctx, pod); err != nil {
 			logger.Error(err, "Fail to delete pod")
 			return ctrl.Result{}, err
 		}
-		hello.Status.Phase = myappv1.InitPhase
+		hello.Status.Phase = myappv1.HelloPending
 	default:
 		logger.Error(
 			nil,

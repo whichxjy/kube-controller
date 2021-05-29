@@ -20,13 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PhaseType string
+type HelloPhase string
 
 const (
-	InitPhase      PhaseType = "Init"
-	RunningPhase   PhaseType = "Running"
-	SucceededPhase PhaseType = "Succeeded"
-	FailedPhase    PhaseType = "Failed"
+	HelloPending   HelloPhase = "Pending"
+	HelloRunning   HelloPhase = "Running"
+	HelloSucceeded HelloPhase = "Succeeded"
+	HelloFailed    HelloPhase = "Failed"
 )
 
 // HelloSpec defines the desired state of Hello
@@ -36,7 +36,7 @@ type HelloSpec struct {
 
 // HelloStatus defines the observed state of Hello
 type HelloStatus struct {
-	Phase PhaseType `json:"phase,omitempty"`
+	Phase HelloPhase `json:"phase,omitempty"`
 }
 
 // +kubebuilder:object:root=true
