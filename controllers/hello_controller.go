@@ -77,7 +77,7 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 		if err := r.Create(ctx, pod); err != nil {
-			logger.Error(err, "Fail to set create pod")
+			logger.Error(err, "Fail to create pod")
 			return ctrl.Result{}, err
 		}
 		hello.Status.Phase = myappv1.HelloRunning
