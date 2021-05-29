@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,10 +39,36 @@ type HelloReconciler struct {
 // +kubebuilder:rbac:groups=myapp.whichxjy.com,resources=hellos/status,verbs=get;update;patch
 
 func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("hello", req.NamespacedName)
+	logger := r.Log.WithValues("hello", req.NamespacedName)
+	logger.Info(
+		"Received request",
+		"Namespace",
+		req.Namespace,
+		"Name",
+		req.Name,
+	)
 
-	// your logic here
+	ctx := context.Background()
+
+	hello := new(myappv1.Hello)
+	if err := r.Get(ctx, req.NamespacedName, hello); err != nil {
+		if errors.IsNotFound(err) {
+			err = nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	if hello.Status.Phase == "" {
+		hello.Status.Phase = myappv1.InitPhase
+	}
+
+	logger.Info("Check phase", "Phase", hello.Status.Phase)
+
+	switch hello.Status.Phase {
+	case myappv1.InitPhase:
+	case myappv1.RunningPhase:
+	case myappv1.CompletedPhase:
+	}
 
 	return ctrl.Result{}, nil
 }

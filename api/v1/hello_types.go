@@ -26,9 +26,9 @@ import (
 type PhaseType string
 
 const (
-	InitPhase      PhaseType = "PENDING"
-	RunningPhase   PhaseType = "RUNNING"
-	CompletedPhase PhaseType = "DONE"
+	InitPhase      PhaseType = "Init"
+	RunningPhase   PhaseType = "Running"
+	CompletedPhase PhaseType = "Completed"
 )
 
 // HelloSpec defines the desired state of Hello
