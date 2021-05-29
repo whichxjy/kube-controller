@@ -28,7 +28,8 @@ type PhaseType string
 const (
 	InitPhase      PhaseType = "Init"
 	RunningPhase   PhaseType = "Running"
-	CompletedPhase PhaseType = "Completed"
+	SucceededPhase PhaseType = "Succeeded"
+	FailedPhase    PhaseType = "Failed"
 )
 
 // HelloSpec defines the desired state of Hello

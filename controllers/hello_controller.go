@@ -66,11 +66,12 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	logger.Info("Check phase", "Phase", hello.Status.Phase)
+	requeue := false
 
 	switch hello.Status.Phase {
 	case myappv1.InitPhase:
 		// Create a pod to run commands.
-		pod := newHelloPod(hello)
+		pod := getHelloPod(hello)
 		if err := ctrl.SetControllerReference(hello, pod, r.Scheme); err != nil {
 			logger.Error(err, "Fail to set controller reference")
 			return ctrl.Result{}, err
@@ -79,9 +80,31 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			logger.Error(err, "Fail to set create pod")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, nil
+		hello.Status.Phase = myappv1.RunningPhase
 	case myappv1.RunningPhase:
-	case myappv1.CompletedPhase:
+		pod := &corev1.Pod{}
+		if err := r.Get(ctx, req.NamespacedName, pod); err != nil {
+			logger.Error(err, "Fail to get pod")
+			return ctrl.Result{}, err
+		}
+
+		if pod.Status.Phase == corev1.PodSucceeded {
+			hello.Status.Phase = myappv1.SucceededPhase
+		} else if pod.Status.Phase == corev1.PodFailed {
+			hello.Status.Phase = myappv1.FailedPhase
+		} else {
+			requeue = true
+		}
+	case myappv1.SucceededPhase:
+		logger.Info("Done")
+		return ctrl.Result{}, nil
+	case myappv1.FailedPhase:
+		pod := getHelloPod(hello)
+		if err := r.Delete(ctx, pod); err != nil {
+			logger.Error(err, "Fail to delete pod")
+			return ctrl.Result{}, err
+		}
+		hello.Status.Phase = myappv1.InitPhase
 	default:
 		logger.Error(
 			nil,
@@ -92,7 +115,13 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, errors.New("Invalid phase")
 	}
 
-	return ctrl.Result{}, nil
+	// Update hello status.
+	if err := r.Status().Update(ctx, hello); err != nil {
+		logger.Error(err, "Fail to update hello status")
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{Requeue: requeue}, nil
 }
 
 func (r *HelloReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -101,7 +130,7 @@ func (r *HelloReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func newHelloPod(hello *myappv1.Hello) *corev1.Pod {
+func getHelloPod(hello *myappv1.Hello) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: hello.Namespace,
@@ -110,9 +139,9 @@ func newHelloPod(hello *myappv1.Hello) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"echo hello"},
+					Name:    "ubuntu",
+					Image:   "ubuntu",
+					Command: []string{"/bin/sh", "-c", "echo 123"},
 				},
 			},
 			RestartPolicy: corev1.RestartPolicyOnFailure,
