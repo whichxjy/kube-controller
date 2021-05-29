@@ -18,14 +18,17 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	myappv1 "github.com/whichxjy/kube-controller/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // HelloReconciler reconciles a Hello object
@@ -52,7 +55,7 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	hello := new(myappv1.Hello)
 	if err := r.Get(ctx, req.NamespacedName, hello); err != nil {
-		if errors.IsNotFound(err) {
+		if kerrors.IsNotFound(err) {
 			err = nil
 		}
 		return ctrl.Result{}, err
@@ -66,8 +69,27 @@ func (r *HelloReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	switch hello.Status.Phase {
 	case myappv1.InitPhase:
+		// Create a pod to run commands.
+		pod := newHelloPod(hello)
+		if err := ctrl.SetControllerReference(hello, pod, r.Scheme); err != nil {
+			logger.Error(err, "Fail to set controller reference")
+			return ctrl.Result{}, err
+		}
+		if err := r.Create(ctx, pod); err != nil {
+			logger.Error(err, "Fail to set create pod")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
 	case myappv1.RunningPhase:
 	case myappv1.CompletedPhase:
+	default:
+		logger.Error(
+			nil,
+			"Invalid phase",
+			"Phase",
+			hello.Status.Phase,
+		)
+		return ctrl.Result{}, errors.New("Invalid phase")
 	}
 
 	return ctrl.Result{}, nil
@@ -77,4 +99,23 @@ func (r *HelloReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&myappv1.Hello{}).
 		Complete(r)
+}
+
+func newHelloPod(hello *myappv1.Hello) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: hello.Namespace,
+			Name:      hello.Name,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: []string{"echo hello"},
+				},
+			},
+			RestartPolicy: corev1.RestartPolicyOnFailure,
+		},
+	}
 }
