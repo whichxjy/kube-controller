@@ -19,16 +19,16 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
+	myappv1 "github.com/whichxjy/kube-controller/api/v1"
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	myappv1 "github.com/whichxjy/kube-controller/api/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // HelloReconciler reconciles a Hello object
@@ -139,9 +139,16 @@ func getHelloPod(hello *myappv1.Hello) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:    "ubuntu",
-					Image:   "ubuntu",
-					Command: []string{"/bin/sh", "-c", "echo 123"},
+					Name:  "ubuntu",
+					Image: "ubuntu",
+					Command: []string{
+						"/bin/sh",
+						"-c",
+						fmt.Sprintf(
+							"seq %d | xargs -I{} echo \"Hello\"",
+							hello.Spec.HelloTimes,
+						),
+					},
 				},
 			},
 			RestartPolicy: corev1.RestartPolicyOnFailure,

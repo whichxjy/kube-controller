@@ -3,4 +3,4 @@ kind: Hello
 metadata:
   name: hello-sample
 spec:
-  helloTimes: 10
+  helloTimes: 3
